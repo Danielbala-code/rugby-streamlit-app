@@ -16,7 +16,7 @@ def load_models():
 
 @st.cache_resource
 def load_faiss_index():
-    return faiss.read_index("faiss_rugby.index.index")
+    return faiss.read_index("faiss_rugby_index.index")
 
 @st.cache_data
 def load_metadata():
