@@ -64,25 +64,34 @@ st.markdown("- `Average defenders beaten by Adam Hastings vs Sharks`")
 st.markdown("- `Tackles by Jamie Ritchie against Saracens`")
 st.markdown("- `Meters run by a Fly Half against Exeter`")
 
-query = st.text_input("🔎 Enter your query here")
+query = st.text_input("🔍 Enter your query here")
 
 if query:
     results = search_and_respond(query)
 
     if len(results) == 0:
-        st.warning("No results found. Try a different query.")
+        st.warning("No results found.")
     else:
         top_context = results.iloc[0]
-        player = top_context['name'] if 'name' in top_context else top_context['player_name']
-        match = top_context['team_vs']
-        team = top_context['team']
+        player = top_context.get('name') or top_context.get('player_name', 'Unknown')
+        team = top_context.get('team', 'Unknown Team')
+        match = top_context.get('team_vs', 'Unknown Opponent')
         score = top_context['relevance']
 
+        # Find most relevant metric from the query
         numeric_cols = results.select_dtypes(include=np.number).columns.tolist()
-        summary = results[numeric_cols].mean(numeric_only=True).round(2)
+        metric_candidates = [col for col in numeric_cols if col.lower() in query.lower()]
+        
+        if metric_candidates:
+            target_metric = metric_candidates[0]  # Best match
+        else:
+            target_metric = 'defenders_beaten'  # Fallback default
+
+        value = round(top_context.get(target_metric, 0), 2)
 
         st.subheader("🧠 Answer:")
-        st.markdown(f"**{player}**, playing for **{team}**, beat an average of **{summary['defenders_beaten']}** defenders per match.")
+        st.markdown(
+            f"**{player}**, playing for **{team}**, recorded a **{target_metric.replace('_', ' ')}** of **{value}**."
+        )
         st.caption(f"🔍 Top Match Score: {round(score, 2)} | Opponent: {match}")
 
-        
