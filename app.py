@@ -1,18 +1,12 @@
-# app.py
-
 import streamlit as st
 import pandas as pd
 import faiss
 import numpy as np
-from sentence_transformers import SentenceTransformer, CrossEncoder
-import re
+from sentence_transformers import SentenceTransformer
 
-# === Load Models and Index ===
 @st.cache_resource
 def load_models():
-    encoder = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
-    reranker = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
-    return encoder, reranker
+    return SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
 
 @st.cache_resource
 def load_faiss_index():
@@ -22,59 +16,28 @@ def load_faiss_index():
 def load_metadata():
     return pd.read_csv("rugby_context_metadata_with_embeddings.csv")
 
-encoder, reranker = load_models()
+encoder = load_models()
 index = load_faiss_index()
 metadata_df = load_metadata()
 
-# === Utility: Extract filters from query ===
-def extract_filters(query, df):
-    filters = {}
-    for col in ['name', 'team', 'team_vs', 'position']:
-        values = df[col].dropna().unique()
-        for val in values:
-            if isinstance(val, str) and val.lower() in query.lower():
-                filters[col] = val
-    return filters
-
-# === Search & Filter Logic ===
-def search_and_respond(query, top_k=15):
+def search(query, top_k=3):
     query_embedding = encoder.encode([query])
     D, I = index.search(np.array(query_embedding).astype("float32"), top_k)
-    matched_contexts = metadata_df.iloc[I[0]].copy()
+    return metadata_df.iloc[I[0]].copy()
 
-    # Re-rank
-    scores = reranker.predict([[query, ctx] for ctx in matched_contexts['context_str']])
-    matched_contexts['relevance'] = scores
-    top_matches = matched_contexts.sort_values("relevance", ascending=False)
+st.set_page_config(page_title="Rugby Q&A", layout="wide")
+st.title("🏉 Lite Rugby Stats App")
 
-    # Optional filter based on query content
-    filters = extract_filters(query, metadata_df)
-    if filters:
-        st.info(f"🔍 Applied Filters: {filters}")
-        for col, val in filters.items():
-            top_matches = top_matches[top_matches[col] == val]
-
-    return top_matches
-
-# === UI ===
-st.set_page_config(page_title="Rugby Stats Query", layout="wide")
-st.title("🏉 Rugby Stats Search Engine")
-st.markdown("Ask questions like:")
-st.markdown("- `Average defenders beaten by Adam Hastings vs Sharks`")
-st.markdown("- `Tackles by Jamie Ritchie against Saracens`")
-st.markdown("- `Meters run by a Fly Half against Exeter`")
-
-query = st.text_input("🔍 Enter your query here")
+query = st.text_input("🔍 Ask a question")
 
 if query:
-    encoder = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
-    reranker = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
-    index = faiss.read_index("faiss_rugby_index.index")
-    metadata_df = pd.read_csv("rugby_context_metadata_with_embeddings.csv")
-    
-    results = search_and_respond(query, top_k=5)
+    results = search(query, top_k=3)
 
-            f"**{player}**, playing for **{team}**, recorded a **{target_metric.replace('_', ' ')}** of **{value}**."
-        )
-        st.caption(f"🔍 Top Match Score: {round(score, 2)} | Opponent: {match}")
+    top_context = results.iloc[0]
+    player = top_context.get('name') or top_context.get('player_name')
+    team = top_context['team']
+    match = top_context['team_vs']
+    metric = 'defenders_beaten'
+    value = top_context.get(metric, 'N/A')
 
+    st.markdown(f"**{player}**, from **{team}**, beat **{value}** defenders vs **{match}**.")
