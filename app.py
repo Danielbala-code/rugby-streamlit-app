@@ -58,7 +58,7 @@ def search_and_respond(query, top_k=15):
 
 # === UI ===
 st.set_page_config(page_title="Rugby Stats Query", layout="wide")
-st.title("🏉 Rugby Stats Search Engine (No LLM)")
+st.title("🏉 Rugby Stats Search Engine")
 st.markdown("Ask questions like:")
 st.markdown("- `Average defenders beaten by Adam Hastings vs Sharks`")
 st.markdown("- `Tackles by Jamie Ritchie against Saracens`")
