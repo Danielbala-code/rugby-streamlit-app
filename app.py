@@ -67,30 +67,13 @@ st.markdown("- `Meters run by a Fly Half against Exeter`")
 query = st.text_input("🔍 Enter your query here")
 
 if query:
-    results = search_and_respond(query)
+    encoder = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+    reranker = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
+    index = faiss.read_index("faiss_rugby_index.index")
+    metadata_df = pd.read_csv("rugby_context_metadata_with_embeddings.csv")
+    
+    results = search_and_respond(query, top_k=5)
 
-    if len(results) == 0:
-        st.warning("No results found.")
-    else:
-        top_context = results.iloc[0]
-        player = top_context.get('name') or top_context.get('player_name', 'Unknown')
-        team = top_context.get('team', 'Unknown Team')
-        match = top_context.get('team_vs', 'Unknown Opponent')
-        score = top_context['relevance']
-
-        # Find most relevant metric from the query
-        numeric_cols = results.select_dtypes(include=np.number).columns.tolist()
-        metric_candidates = [col for col in numeric_cols if col.lower() in query.lower()]
-        
-        if metric_candidates:
-            target_metric = metric_candidates[0]  # Best match
-        else:
-            target_metric = 'defenders_beaten'  # Fallback default
-
-        value = round(top_context.get(target_metric, 0), 2)
-
-        st.subheader("🧠 Answer:")
-        st.markdown(
             f"**{player}**, playing for **{team}**, recorded a **{target_metric.replace('_', ' ')}** of **{value}**."
         )
         st.caption(f"🔍 Top Match Score: {round(score, 2)} | Opponent: {match}")
