@@ -29,7 +29,7 @@ metadata_df = load_metadata()
 # === Utility: Extract filters from query ===
 def extract_filters(query, df):
     filters = {}
-    for col in ['player_name', 'team', 'team_vs', 'position']:
+    for col in ['name', 'team', 'team_vs', 'position']:
         values = df[col].dropna().unique()
         for val in values:
             if isinstance(val, str) and val.lower() in query.lower():
@@ -73,7 +73,7 @@ if query:
         st.warning("No results found. Try a different query.")
     else:
         st.subheader("🔍 Top Matched Results")
-        st.dataframe(results[['player_name', 'team', 'team_vs', 'position', 'context_str', 'relevance']])
+        st.dataframe(results[['name', 'team', 'team_vs', 'position', 'context_str', 'relevance']])
 
         st.subheader("📊 Statistical Summary")
         numeric_cols = results.select_dtypes(include=np.number).columns.tolist()
