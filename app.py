@@ -72,13 +72,17 @@ if query:
     if len(results) == 0:
         st.warning("No results found. Try a different query.")
     else:
-        st.subheader("🔍 Top Matched Results")
-        st.dataframe(results[['name', 'team', 'team_vs', 'position', 'context_str', 'relevance']])
+        top_context = results.iloc[0]
+        player = top_context['name'] if 'name' in top_context else top_context['player_name']
+        match = top_context['team_vs']
+        team = top_context['team']
+        score = top_context['relevance']
 
-        st.subheader("📊 Statistical Summary")
         numeric_cols = results.select_dtypes(include=np.number).columns.tolist()
-        if numeric_cols:
-            summary_stats = results[numeric_cols].mean(numeric_only=True).round(2)
-            st.write(summary_stats)
-        else:
-            st.write("No numeric columns found in filtered results.")
+        summary = results[numeric_cols].mean(numeric_only=True).round(2)
+
+        st.subheader("🧠 Answer:")
+        st.markdown(f"**{player}**, playing for **{team}**, beat an average of **{summary['defenders_beaten']}** defenders per match.")
+        st.caption(f"🔍 Top Match Score: {round(score, 2)} | Opponent: {match}")
+
+        
